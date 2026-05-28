@@ -20,3 +20,31 @@ def generate_insights(
     )
 
     return insights
+
+def generate_risk_insights(
+    workload_burnout,
+    sleep_depression,
+    manager_stress
+):
+
+    risks = []
+
+    if workload_burnout > 7:
+
+        risks.append(
+            "Employees working over 55 hours weekly are at critical burnout risk."
+        )
+
+    if sleep_depression > 10:
+
+        risks.append(
+            "Employees sleeping fewer than 5 hours show severe depression indicators."
+        )
+
+    if manager_stress > 7:
+
+        risks.append(
+            "Low manager support is strongly associated with elevated stress levels."
+        )
+
+    return risks

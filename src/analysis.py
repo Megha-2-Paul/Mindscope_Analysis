@@ -23,3 +23,30 @@ def sleep_depression_analysis(df):
     avg_depression = low_sleep["phq9_score"].mean()
 
     return avg_depression
+
+#Burnout Risk Detection
+def high_workload_risk(df):
+
+    high_workload = df[df["work_hours_per_week"] > 55]
+
+    avg_burnout = high_workload["burnout_score"].mean()
+
+    return avg_burnout
+
+#Sleep Risk Detection
+def sleep_risk_analysis(df):
+
+    poor_sleep = df[df["sleep_hours_per_night"] < 5]
+
+    avg_phq9 = poor_sleep["phq9_score"].mean()
+
+    return avg_phq9
+
+#Manager Support Risk
+def manager_support_risk(df):
+
+    low_support = df[df["manager_support_score"] < 4]
+
+    avg_stress = low_support["stress_score"].mean()
+
+    return avg_stress
