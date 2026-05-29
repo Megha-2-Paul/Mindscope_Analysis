@@ -1,5 +1,7 @@
 import matplotlib.pyplot as plt
 import seaborn as sns
+from collections import Counter
+
 
 
 def burnout_by_role(df):
@@ -94,3 +96,32 @@ def correlation_heatmap(df):
     plt.close()
     
 print("\nCharts saved to Visualization directory")
+
+
+def theme_frequency_chart(df):
+
+    counter = Counter()
+
+    for themes in df["themes"]:
+        counter.update(themes)
+
+    plt.figure(figsize=(8, 5))
+
+    plt.bar(
+        counter.keys(),
+        counter.values()
+    )
+
+    plt.title("Employee Feedback Themes")
+
+    plt.xlabel("Theme")
+
+    plt.ylabel("Frequency")
+
+    plt.tight_layout()
+
+    plt.savefig(
+        "visualizations/theme_frequency.png"
+    )
+
+    plt.close()
