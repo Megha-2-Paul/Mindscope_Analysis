@@ -170,6 +170,30 @@ df["clean_feedback"] = (
     .apply(preprocess_text)
 )
 
+nlp_dataset = df[
+    [
+        "employee_id",
+        "burnout_score",
+        "burnout_level",
+        "stress_score",
+        "sleep_hours_per_night",
+        "manager_support_score",
+        "work_life_balance_score",
+        "employee_feedback",
+        "clean_feedback",
+        "themes"
+    ]
+]
+
+nlp_dataset.to_csv(
+    "data/nlp_employee_feedback.csv",
+    index=False
+)
+
+print(
+    "\nNLP dataset saved to: data/nlp_employee_feedback.csv"
+)
+
 print("\n========== SAMPLE GENERATED FEEDBACK ==========\n")
 
 print(
