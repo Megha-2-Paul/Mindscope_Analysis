@@ -1,15 +1,31 @@
+# ==========================================
+# IMPORTS
+# ==========================================
+
+import time
+
 from src.data_loader import load_data
 
+# Analytics
 from src.analysis import (
     calculate_average_burnout,
     highest_burnout_role,
-    sleep_depression_analysis
+    sleep_depression_analysis,
+    high_workload_risk,
+    sleep_risk_analysis,
+    manager_support_risk
 )
 
+# Insight Generators
+from src.insight_generator import (
+    generate_insights,
+    generate_risk_insights
+)
+
+# Correlation Engine
 from src.correlation_engine import burnout_correlations
 
-from src.insight_generator import generate_insights
-
+# Visualizations
 from src.visualization import (
     burnout_by_role,
     workhours_vs_burnout,
@@ -17,38 +33,78 @@ from src.visualization import (
     theme_frequency_chart
 )
 
-from src.analysis import (
-    high_workload_risk,
-    sleep_risk_analysis,
-    manager_support_risk
-)
-
-from src.insight_generator import generate_risk_insights
+# NLP Components
 from src.text_generator import generate_feedback
-
+from src.text_preprocessor import preprocess_text
 from src.nlp_engine import detect_themes
-
 from src.nlp_insights import generate_theme_insights
-
 from src.keyword_extractor import extract_top_keywords
-
+from src.topic_modeler import extract_topics
 from src.nlp_burnout_analysis import burnout_word_frequency
 
-# from src.ai_feedback_generator import generate_employee_feedback
 
-# Load dataset
+# ==========================================
+# SYSTEM SETTINGS
+# ==========================================
+
+start_time = time.time()
+
+DEVELOPMENT_MODE = True
+
+RUN_VISUALIZATIONS = False
+RUN_TOPIC_MODELING = True
+RUN_KEYWORD_EXTRACTION = True
+RUN_BURNOUT_ANALYSIS = True
+
+SAMPLE_SIZE = 5000
+
+
+# ==========================================
+# LOAD DATA
+# ==========================================
+
 df = load_data(
     "data/mental_health_burnout_tech_2026.csv"
 )
 
-# Run analysis
+print("\n====================================")
+print("     MINDSCOPE ANALYTICS PLATFORM")
+print("====================================\n")
+
+print(f"Original Dataset Size: {len(df):,}")
+
+# ==========================================
+# DEVELOPMENT MODE
+# ==========================================
+
+if DEVELOPMENT_MODE:
+
+    df = df.sample(
+        n=SAMPLE_SIZE,
+        random_state=42
+    )
+
+    print(
+        f"Development Mode: Using {len(df):,} records"
+    )
+
+else:
+
+    print(
+        f"Production Mode: Using {len(df):,} records"
+    )
+
+
+# ==========================================
+# BUSINESS ANALYTICS
+# ==========================================
+
 avg_burnout = calculate_average_burnout(df)
 
 top_role, top_score = highest_burnout_role(df)
 
 avg_depression = sleep_depression_analysis(df)
 
-# Generate insights
 insights = generate_insights(
     avg_burnout,
     top_role,
@@ -56,53 +112,65 @@ insights = generate_insights(
     avg_depression
 )
 
-# Print insights
+print("\n========== BUSINESS INSIGHTS ==========\n")
+
 for insight in insights:
     print("•", insight)
 
-# Risk analysis
+
+# ==========================================
+# RISK ANALYSIS
+# ==========================================
+
 workload_burnout = high_workload_risk(df)
 
 sleep_depression = sleep_risk_analysis(df)
 
 manager_stress = manager_support_risk(df)
 
-# Generate risk insights
 risk_insights = generate_risk_insights(
     workload_burnout,
     sleep_depression,
     manager_stress
 )
 
-# Print risk insights
+print("\n========== RISK ANALYSIS ==========\n")
+
 for risk in risk_insights:
     print("🚨", risk)
 
-# Correlation intelligence
+
+# ==========================================
+# CORRELATION ANALYSIS
+# ==========================================
+
 correlation_insights = burnout_correlations(df)
 
-print("\n--- Correlation Insights ---\n")
+print("\n========== CORRELATION INSIGHTS ==========\n")
 
 for insight in correlation_insights:
     print("•", insight)
-    
-# #Visualization
-# burnout_by_role(df)
-# workhours_vs_burnout(df)
-# correlation_heatmap(df)
+
+
+# ==========================================
+# NLP FEEDBACK GENERATION
+# ==========================================
 
 df["employee_feedback"] = df.apply(
     generate_feedback,
     axis=1
 )
 
-# df["sentiment"] = df["employee_feedback"].apply(
-#     analyze_sentiment
-# )
-
 df["themes"] = df["employee_feedback"].apply(
     detect_themes
 )
+
+df["clean_feedback"] = (
+    df["employee_feedback"]
+    .apply(preprocess_text)
+)
+
+print("\n========== SAMPLE GENERATED FEEDBACK ==========\n")
 
 print(
     df[
@@ -114,33 +182,108 @@ print(
     ].head(10)
 )
 
-theme_frequency_chart(df)
+
+# ==========================================
+# NLP THEME ANALYSIS
+# ==========================================
 
 theme_insights = generate_theme_insights(df)
 
-print("\n--- NLP Theme Insights ---\n")
+print("\n========== NLP THEME INSIGHTS ==========\n")
 
 for insight in theme_insights:
     print("•", insight)
 
-top_keywords = extract_top_keywords(
-    df["employee_feedback"]
+
+# ==========================================
+# TF-IDF KEYWORD EXTRACTION
+# ==========================================
+
+if RUN_KEYWORD_EXTRACTION:
+
+    top_keywords = extract_top_keywords(
+        df["clean_feedback"]
+    )
+
+    print("\n========== TOP NLP KEYWORDS ==========\n")
+
+    for keyword, score in top_keywords:
+
+        print(
+            f"{keyword}: {score:.4f}"
+        )
+
+
+# ==========================================
+# TOPIC MODELING (LDA)
+# ==========================================
+
+if RUN_TOPIC_MODELING:
+
+    topics = extract_topics(
+        df["clean_feedback"]
+    )
+
+    print("\n========== TOPIC MODELING RESULTS ==========\n")
+
+    for topic in topics:
+
+        print(
+            f"Topic {topic['topic']}: "
+            + ", ".join(topic["words"])
+        )
+
+
+# ==========================================
+# BURNOUT LANGUAGE ANALYSIS
+# ==========================================
+
+if RUN_BURNOUT_ANALYSIS:
+
+    burnout_words = burnout_word_frequency(df)
+
+    print(
+        "\n========== BURNOUT LANGUAGE ANALYSIS ==========\n"
+    )
+
+    for word, count in burnout_words.most_common():
+
+        print(
+            f"{word}: {count}"
+        )
+
+
+# ==========================================
+# VISUALIZATIONS
+# ==========================================
+
+if RUN_VISUALIZATIONS:
+
+    # Uncomment if needed
+    # burnout_by_role(df)
+    # workhours_vs_burnout(df)
+    # correlation_heatmap(df)
+
+    theme_frequency_chart(df)
+
+    print(
+        "\n========== VISUALIZATIONS ==========\n"
+    )
+
+    print(
+        "Charts saved to visualizations directory."
+    )
+
+
+# ==========================================
+# EXECUTION SUMMARY
+# ==========================================
+
+end_time = time.time()
+
+print("\n====================================")
+print(
+    f"Execution Time: "
+    f"{end_time - start_time:.2f} seconds"
 )
-
-print("\n--- Top NLP Keywords ---\n")
-
-for keyword, score in top_keywords:
-
-    print(
-        f"{keyword}: {score:.4f}"
-    )
-    
-burnout_words = burnout_word_frequency(df)
-
-print("\n--- Burnout Language Analysis ---\n")
-
-for word, count in burnout_words.most_common():
-
-    print(
-        f"{word}: {count}"
-    )
+print("====================================")
