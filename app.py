@@ -3,6 +3,7 @@
 # ==========================================
 
 import time
+import random
 
 from src.data_loader import load_data
 
@@ -42,7 +43,9 @@ from src.keyword_extractor import extract_top_keywords
 from src.topic_modeler import extract_topics
 from src.nlp_burnout_analysis import burnout_word_frequency
 
-
+from src.burnout_classifier import (
+    train_burnout_classifier
+)
 # ==========================================
 # SYSTEM SETTINGS
 # ==========================================
@@ -156,6 +159,8 @@ for insight in correlation_insights:
 # NLP FEEDBACK GENERATION
 # ==========================================
 
+random.seed(42)
+
 df["employee_feedback"] = df.apply(
     generate_feedback,
     axis=1
@@ -173,17 +178,18 @@ df["clean_feedback"] = (
 nlp_dataset = df[
     [
         "employee_id",
-        "burnout_score",
         "burnout_level",
-        "stress_score",
-        "sleep_hours_per_night",
-        "manager_support_score",
-        "work_life_balance_score",
+        "burnout_score",
         "employee_feedback",
         "clean_feedback",
         "themes"
     ]
-]
+].copy()
+
+nlp_dataset["themes"] = (
+    nlp_dataset["themes"]
+    .apply(lambda x: ", ".join(x))
+)
 
 nlp_dataset.to_csv(
     "data/nlp_employee_feedback.csv",
@@ -191,7 +197,7 @@ nlp_dataset.to_csv(
 )
 
 print(
-    "\nNLP dataset saved to: data/nlp_employee_feedback.csv"
+    "\nNLP dataset saved successfully."
 )
 
 print("\n========== SAMPLE GENERATED FEEDBACK ==========\n")
@@ -298,7 +304,27 @@ if RUN_VISUALIZATIONS:
         "Charts saved to visualizations directory."
     )
 
+# ==========================================
+# BURNOUT CLASSIFICATION MODEL
+# ==========================================
 
+model, vectorizer, accuracy, report = (
+    train_burnout_classifier(df)
+)
+
+print(
+    "\n========== BURNOUT CLASSIFIER ==========\n"
+)
+
+print(
+    f"Accuracy: {accuracy:.4f}"
+)
+
+print(
+    "\nClassification Report:\n"
+)
+
+print(report)
 # ==========================================
 # EXECUTION SUMMARY
 # ==========================================

@@ -1,35 +1,13 @@
 import re
 
 CUSTOM_STOPWORDS = {
-    "work",
-    "feel",
-    "felt",
-    "role",
-    "employee",
-    "employees",
-    "generally",
-    "currently",
-    "usually",
-    "recently",
-    "past",
-    "months",
-    "month",
     "recently",
     "lately",
-    "time",
-    "current",
-    "experience",
-    "role",
-    "work",
-    "employee",
-    "employees",
-    "generally",
-    "currently",
-    "usually",
-    "felt",
-    "feel"
+    "past",
+    "month",
+    "months",
+    "experience"
 }
-
 
 def preprocess_text(text):
 

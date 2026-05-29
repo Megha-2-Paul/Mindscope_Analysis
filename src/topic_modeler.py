@@ -5,10 +5,11 @@ from sklearn.decomposition import LatentDirichletAllocation
 def extract_topics(texts, n_topics=5):
 
     vectorizer = CountVectorizer(
-        stop_words="english",
-        max_df=0.95,
-        min_df=2
-    )
+    stop_words="english",
+    max_df=0.90,
+    min_df=5,
+    ngram_range=(1, 2)
+)
 
     doc_term_matrix = vectorizer.fit_transform(texts)
 
