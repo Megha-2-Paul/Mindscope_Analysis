@@ -59,7 +59,7 @@ RUN_TOPIC_MODELING = True
 RUN_KEYWORD_EXTRACTION = True
 RUN_BURNOUT_ANALYSIS = True
 
-SAMPLE_SIZE = 5000
+SAMPLE_SIZE = 8000
 
 
 # ==========================================
