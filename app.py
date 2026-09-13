@@ -1,339 +1,137 @@
-# ==========================================
-# IMPORTS
-# ==========================================
+"""MindScope Analytics command-line application."""
 
-import time
 import random
+import time
 
-from src.data_loader import load_data
-
-# Analytics
 from src.analysis import (
     calculate_average_burnout,
     highest_burnout_role,
     sleep_depression_analysis,
     high_workload_risk,
     sleep_risk_analysis,
-    manager_support_risk
+    manager_support_risk,
 )
-
-# Insight Generators
-from src.insight_generator import (
-    generate_insights,
-    generate_risk_insights
-)
-
-# Correlation Engine
+from src.burnout_classifier import train_burnout_classifier
 from src.correlation_engine import burnout_correlations
-
-# Visualizations
-from src.visualization import (
-    burnout_by_role,
-    workhours_vs_burnout,
-    correlation_heatmap,
-    theme_frequency_chart
-)
-
-# NLP Components
-from src.text_generator import generate_feedback
-from src.text_preprocessor import preprocess_text
+from src.data_loader import load_data
+from src.insight_generator import generate_insights, generate_risk_insights
+from src.keyword_extractor import extract_top_keywords
+from src.nlp_burnout_analysis import burnout_word_frequency
 from src.nlp_engine import detect_themes
 from src.nlp_insights import generate_theme_insights
-from src.keyword_extractor import extract_top_keywords
+from src.text_generator import generate_feedback
+from src.text_preprocessor import preprocess_text
 from src.topic_modeler import extract_topics
-from src.nlp_burnout_analysis import burnout_word_frequency
 
-from src.burnout_classifier import (
-    train_burnout_classifier
-)
-# ==========================================
-# SYSTEM SETTINGS
-# ==========================================
-
-start_time = time.time()
 
 DEVELOPMENT_MODE = True
-
-RUN_VISUALIZATIONS = False
 RUN_TOPIC_MODELING = True
 RUN_KEYWORD_EXTRACTION = True
 RUN_BURNOUT_ANALYSIS = True
-
 SAMPLE_SIZE = 8000
 
 
-# ==========================================
-# LOAD DATA
-# ==========================================
+def main():
+    start_time = time.time()
 
-df = load_data(
-    "data/mental_health_burnout_tech_2026.csv"
-)
+    df = load_data("data/mental_health_burnout_tech_2026.csv")
 
-print("\n====================================")
-print("     MINDSCOPE ANALYTICS PLATFORM")
-print("====================================\n")
+    print("\n====================================")
+    print("     MINDSCOPE ANALYTICS PLATFORM")
+    print("====================================\n")
+    print(f"Original Dataset Size: {len(df):,}")
 
-print(f"Original Dataset Size: {len(df):,}")
+    if DEVELOPMENT_MODE and len(df) > SAMPLE_SIZE:
+        df = df.sample(n=SAMPLE_SIZE, random_state=42)
+        print(f"Development Mode: Using {len(df):,} records")
+    else:
+        print(f"Production Mode: Using {len(df):,} records")
 
-# ==========================================
-# DEVELOPMENT MODE
-# ==========================================
+    # ---------------- BUSINESS ANALYTICS ----------------
+    avg_burnout = calculate_average_burnout(df)
+    top_role, top_score = highest_burnout_role(df)
+    avg_depression = sleep_depression_analysis(df)
 
-if DEVELOPMENT_MODE:
+    print("\n========== BUSINESS INSIGHTS ==========\n")
+    for insight in generate_insights(
+        avg_burnout, top_role, top_score, avg_depression
+    ):
+        print("•", insight)
 
-    df = df.sample(
-        n=SAMPLE_SIZE,
-        random_state=42
-    )
+    # ---------------- RISK ANALYSIS ----------------
+    workload_burnout = high_workload_risk(df)
+    sleep_depression = sleep_risk_analysis(df)
+    manager_stress = manager_support_risk(df)
 
-    print(
-        f"Development Mode: Using {len(df):,} records"
-    )
+    print("\n========== RISK ANALYSIS ==========\n")
+    for risk in generate_risk_insights(
+        workload_burnout, sleep_depression, manager_stress
+    ):
+        print("🚨", risk)
 
-else:
+    # ---------------- CORRELATIONS ----------------
+    print("\n========== CORRELATION INSIGHTS ==========\n")
+    for insight in burnout_correlations(df):
+        print("•", insight)
 
-    print(
-        f"Production Mode: Using {len(df):,} records"
-    )
+    # ---------------- NLP DEMONSTRATION ----------------
+    random.seed(42)
+    df["employee_feedback"] = df.apply(generate_feedback, axis=1)
+    df["themes"] = df["employee_feedback"].apply(detect_themes)
+    df["clean_feedback"] = df["employee_feedback"].apply(preprocess_text)
 
-
-# ==========================================
-# BUSINESS ANALYTICS
-# ==========================================
-
-avg_burnout = calculate_average_burnout(df)
-
-top_role, top_score = highest_burnout_role(df)
-
-avg_depression = sleep_depression_analysis(df)
-
-insights = generate_insights(
-    avg_burnout,
-    top_role,
-    top_score,
-    avg_depression
-)
-
-print("\n========== BUSINESS INSIGHTS ==========\n")
-
-for insight in insights:
-    print("•", insight)
-
-
-# ==========================================
-# RISK ANALYSIS
-# ==========================================
-
-workload_burnout = high_workload_risk(df)
-
-sleep_depression = sleep_risk_analysis(df)
-
-manager_stress = manager_support_risk(df)
-
-risk_insights = generate_risk_insights(
-    workload_burnout,
-    sleep_depression,
-    manager_stress
-)
-
-print("\n========== RISK ANALYSIS ==========\n")
-
-for risk in risk_insights:
-    print("🚨", risk)
-
-
-# ==========================================
-# CORRELATION ANALYSIS
-# ==========================================
-
-correlation_insights = burnout_correlations(df)
-
-print("\n========== CORRELATION INSIGHTS ==========\n")
-
-for insight in correlation_insights:
-    print("•", insight)
-
-
-# ==========================================
-# NLP FEEDBACK GENERATION
-# ==========================================
-
-random.seed(42)
-
-df["employee_feedback"] = df.apply(
-    generate_feedback,
-    axis=1
-)
-
-df["themes"] = df["employee_feedback"].apply(
-    detect_themes
-)
-
-df["clean_feedback"] = (
-    df["employee_feedback"]
-    .apply(preprocess_text)
-)
-
-nlp_dataset = df[
-    [
-        "employee_id",
-        "burnout_level",
-        "burnout_score",
-        "employee_feedback",
-        "clean_feedback",
-        "themes"
-    ]
-].copy()
-
-nlp_dataset["themes"] = (
-    nlp_dataset["themes"]
-    .apply(lambda x: ", ".join(x))
-)
-
-nlp_dataset.to_csv(
-    "data/nlp_employee_feedback.csv",
-    index=False
-)
-
-print(
-    "\nNLP dataset saved successfully."
-)
-
-print("\n========== SAMPLE GENERATED FEEDBACK ==========\n")
-
-print(
-    df[
+    nlp_dataset = df[
         [
+            "employee_id",
+            "burnout_level",
             "burnout_score",
             "employee_feedback",
-            "themes"
+            "clean_feedback",
+            "themes",
         ]
-    ].head(10)
-)
-
-
-# ==========================================
-# NLP THEME ANALYSIS
-# ==========================================
-
-theme_insights = generate_theme_insights(df)
-
-print("\n========== NLP THEME INSIGHTS ==========\n")
-
-for insight in theme_insights:
-    print("•", insight)
-
-
-# ==========================================
-# TF-IDF KEYWORD EXTRACTION
-# ==========================================
-
-if RUN_KEYWORD_EXTRACTION:
-
-    top_keywords = extract_top_keywords(
-        df["clean_feedback"]
+    ].copy()
+    nlp_dataset["themes"] = nlp_dataset["themes"].apply(
+        lambda values: ", ".join(values)
     )
+    nlp_dataset.to_csv("data/nlp_employee_feedback.csv", index=False)
 
-    print("\n========== TOP NLP KEYWORDS ==========\n")
+    print("\nNLP dataset saved successfully.")
+    print("\n========== NLP THEME INSIGHTS ==========\n")
+    for insight in generate_theme_insights(df):
+        print("•", insight)
 
-    for keyword, score in top_keywords:
+    if RUN_KEYWORD_EXTRACTION:
+        print("\n========== TOP NLP KEYWORDS ==========\n")
+        for keyword, score in extract_top_keywords(df["clean_feedback"]):
+            print(f"{keyword}: {score:.4f}")
 
-        print(
-            f"{keyword}: {score:.4f}"
-        )
+    if RUN_TOPIC_MODELING:
+        print("\n========== TOPIC MODELING RESULTS ==========\n")
+        for topic in extract_topics(df["clean_feedback"]):
+            print(f"Topic {topic['topic']}: " + ", ".join(topic["words"]))
 
+    if RUN_BURNOUT_ANALYSIS:
+        print("\n========== BURNOUT LANGUAGE ANALYSIS ==========\n")
+        for word, count in burnout_word_frequency(df).most_common():
+            print(f"{word}: {count}")
 
-# ==========================================
-# TOPIC MODELING (LDA)
-# ==========================================
+    # ---------------- STRUCTURED ML ----------------
+    # The predictive model intentionally does NOT use the generated feedback.
+    model, preprocessor, accuracy, report, comparison = train_burnout_classifier(df)
 
-if RUN_TOPIC_MODELING:
+    print("\n========== STRUCTURED BURNOUT CLASSIFIER ==========\n")
+    print("Model comparison (cross-validated weighted F1):")
+    print(comparison.to_string(index=False))
+    print(f"\nBest model test accuracy: {accuracy:.4f}")
+    print("\nClassification Report:\n")
+    print(report)
+    print("\nSaved model: models/burnout_structured_model.pkl")
 
-    topics = extract_topics(
-        df["clean_feedback"]
-    )
-
-    print("\n========== TOPIC MODELING RESULTS ==========\n")
-
-    for topic in topics:
-
-        print(
-            f"Topic {topic['topic']}: "
-            + ", ".join(topic["words"])
-        )
-
-
-# ==========================================
-# BURNOUT LANGUAGE ANALYSIS
-# ==========================================
-
-if RUN_BURNOUT_ANALYSIS:
-
-    burnout_words = burnout_word_frequency(df)
-
-    print(
-        "\n========== BURNOUT LANGUAGE ANALYSIS ==========\n"
-    )
-
-    for word, count in burnout_words.most_common():
-
-        print(
-            f"{word}: {count}"
-        )
+    elapsed = time.time() - start_time
+    print("\n====================================")
+    print(f"Execution Time: {elapsed:.2f} seconds")
+    print("====================================")
 
 
-# ==========================================
-# VISUALIZATIONS
-# ==========================================
-
-if RUN_VISUALIZATIONS:
-
-    # Uncomment if needed
-    # burnout_by_role(df)
-    # workhours_vs_burnout(df)
-    # correlation_heatmap(df)
-
-    theme_frequency_chart(df)
-
-    print(
-        "\n========== VISUALIZATIONS ==========\n"
-    )
-
-    print(
-        "Charts saved to visualizations directory."
-    )
-
-# ==========================================
-# BURNOUT CLASSIFICATION MODEL
-# ==========================================
-
-model, vectorizer, accuracy, report = (
-    train_burnout_classifier(df)
-)
-
-print(
-    "\n========== BURNOUT CLASSIFIER ==========\n"
-)
-
-print(
-    f"Accuracy: {accuracy:.4f}"
-)
-
-print(
-    "\nClassification Report:\n"
-)
-
-print(report)
-# ==========================================
-# EXECUTION SUMMARY
-# ==========================================
-
-end_time = time.time()
-
-print("\n====================================")
-print(
-    f"Execution Time: "
-    f"{end_time - start_time:.2f} seconds"
-)
-print("====================================")
+if __name__ == "__main__":
+    main()
