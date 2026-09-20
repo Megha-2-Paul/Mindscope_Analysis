@@ -17,10 +17,6 @@ app = FastAPI(
 model = load_or_train_model()
 
 
-class EmployeeFeatures:
-    pass
-
-
 from pydantic import BaseModel
 
 
