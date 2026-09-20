@@ -176,3 +176,6 @@ websockets==16.0
 widgetsnbextension==4.0.16
 wrapt==2.2.1
 pytest
+
+fastapi
+uvicorn
