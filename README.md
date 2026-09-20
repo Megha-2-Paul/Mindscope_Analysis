@@ -1,29 +1,17 @@
 # MindScope — Employee Burnout Intelligence
 
-MindScope is a Python-based analytics and machine-learning project for exploring workplace burnout patterns, identifying associated risk factors, comparing predictive models, and extracting themes from employee feedback.
+MindScope is a Python portfolio/research project that combines structured-data analytics, machine learning, and NLP exploration to study workplace burnout patterns.
 
-> **Project status:** Portfolio / research prototype. It is not a clinical diagnostic system and should not be used as the sole basis for employment, HR, or medical decisions.
+> **Status:** Portfolio / research prototype. It is not a clinical diagnostic system and should not be used as the sole basis for employment, HR, or medical decisions.
 
 ## What MindScope does
 
-MindScope combines two complementary analysis tracks:
+MindScope has two intentionally separate analysis tracks:
 
-1. **Structured-data analytics and ML** — analyzes workplace and wellbeing variables and predicts the dataset's `burnout_level` category.
-2. **NLP analysis** — processes employee feedback to identify themes, keywords, topics, and burnout-related language. The current project can generate synthetic feedback for demonstration purposes; this text is intentionally kept separate from the primary structured ML training pipeline.
+1. **Structured ML:** predicts the dataset's `burnout_level` category from employee/workplace features.
+2. **NLP exploration:** analyzes employee feedback for themes, keywords, topics, and burnout-related language. The current feedback generator is synthetic and is used only to demonstrate the NLP workflow.
 
-## Key capabilities
-
-- Burnout and workforce descriptive analytics
-- Risk-oriented analysis of workload, sleep, stress, and manager support
-- Correlation analysis across workplace and wellbeing variables
-- Feature engineering with explicit target-leakage prevention
-- Comparison of Logistic Regression, Random Forest, and Gradient Boosting
-- Cross-validation and classification metrics
-- Confusion-matrix evaluation
-- TF-IDF keyword extraction
-- LDA topic modelling
-- Theme detection and burnout-language analysis
-- Streamlit dashboard and batch-prediction components
+The structured ML model does **not** use generated feedback.
 
 ## Architecture
 
@@ -38,89 +26,76 @@ MindScope combines two complementary analysis tracks:
           v                         v
  Feature Engineering          Preprocessing
           |                         |
-          v                         v
-  ML Model Comparison       NLP / Theme Analysis
-          |                         |
-          v                         v
-     Risk Prediction        Topics / Keywords
-          |                         |
-          +------------+------------+
-                       |
-                       v
-                  Insights
+          v                         +----> Themes
+     ML Comparison                    +----> TF-IDF Keywords
+          |                           +----> LDA Topics
+          v                           +----> Burnout Language
+   Best Classifier
+          |
+          v
+    Burnout Level
 ```
 
-## ML pipeline
+## Structured ML pipeline
 
-The primary burnout classifier uses structured employee features rather than the generated feedback text. `burnout_score` is excluded from model features because it is directly related to the target and could create target leakage.
+The target is `burnout_level`.
 
-The current model candidates are:
+`burnout_score` is deliberately excluded because it is directly related to the target and would create target leakage. `phq9_category` and `gad7_category` are also excluded because their numeric counterparts are already represented and the categorical versions are sensitive/redundant.
 
-- Logistic Regression — interpretable baseline
-- Random Forest — nonlinear tree-based model
-- Gradient Boosting — nonlinear boosting model
+Candidate models:
 
-Models are compared using cross-validation and weighted F1, with additional holdout evaluation using accuracy, precision, recall, F1, classification report, and confusion matrix.
+- Logistic Regression
+- Random Forest
+- Gradient Boosting
+
+Model selection uses 5-fold cross-validation with weighted F1. The selected model is then evaluated on a stratified holdout set using accuracy, precision, recall, F1, classification report, and confusion matrix.
 
 ## NLP pipeline
 
-The NLP component currently supports:
+The NLP track supports:
 
-```text
-Employee feedback
-       |
-       v
-Text preprocessing
-       |
-       +----> Theme detection
-       |
-       +----> TF-IDF keywords
-       |
-       +----> LDA topics
-       |
-       +----> Burnout-language frequency
+- Text preprocessing
+- Rule-based theme detection
+- TF-IDF keyword extraction
+- LDA topic modelling
+- Burnout-language frequency analysis
+
+Synthetic feedback is generated from structured attributes for demonstration only. Because that feedback is constructed from burnout-related variables, it is **not** treated as independent employee testimony and is not used as the primary structured ML training input.
+
+## Streamlit dashboard
+
+Run:
+
+```bash
+streamlit run dashboard.py
 ```
 
-Generated feedback is useful for demonstrating the NLP pipeline, but it is not treated as independent real-world employee testimony.
+The dashboard uses the same structured ML pipeline as the training code. If a trained model artifact is not present locally, it trains the model from the project dataset and caches it for the session.
 
-## Dataset
+The dashboard supports:
 
-The project currently uses `data/mental_health_burnout_tech_2026.csv`. The dataset contains employee/workplace characteristics, wellbeing measures, and burnout labels. See [`docs/DATA_DICTIONARY.md`](docs/DATA_DICTIONARY.md) for the documented fields.
+- Individual structured-feature prediction
+- Class probabilities
+- Batch CSV prediction
+- Downloadable prediction results
 
-## Project structure
+## FastAPI API
 
-```text
-Mindscope_Analysis/
-├── app.py
-├── dashboard.py
-├── requirements.txt
-├── data/
-│   ├── mental_health_burnout_tech_2026.csv
-│   └── ...
-├── models/
-├── notebooks/
-├── reports/
-├── src/
-│   ├── analysis.py
-│   ├── burnout_classifier.py
-│   ├── correlation_engine.py
-│   ├── data_loader.py
-│   ├── feature_engineering.py
-│   ├── model_evaluation.py
-│   ├── nlp_engine.py
-│   ├── text_generator.py
-│   └── ...
-├── tests/
-└── docs/
-    ├── PROJECT_OVERVIEW.md
-    ├── ML_METHODOLOGY.md
-    ├── DATA_DICTIONARY.md
-    └── NLP_PIPELINE.md
+Run:
+
+```bash
+uvicorn api:app --reload
 ```
+
+Endpoints:
+
+- `GET /` — service information
+- `GET /health` — health check
+- `POST /predict` — structured burnout prediction
+
+The request schema mirrors the model's required features. No employee feedback text is required for prediction.
 
 ## Installation
-
-Clone the repository and create a virtual environment:
 
 ```bash
 git clone https://github.com/Megha-2-Paul/Mindscope_Analysis.git
@@ -128,7 +103,7 @@ cd Mindscope_Analysis
 python -m venv .venv
 ```
 
-Activate it on Windows PowerShell:
+Windows PowerShell:
 
 ```powershell
 .venv\Scripts\Activate.ps1
@@ -140,64 +115,81 @@ Install dependencies:
 pip install -r requirements.txt
 ```
 
-## Running the analysis
-
-Run the main analytics pipeline with:
-
-```bash
-python app.py
-```
-
-The application loads the dataset, performs the descriptive/risk analyses, runs the NLP components that are enabled, and trains/evaluates the structured burnout classifier.
-
-## Running tests
-
-Run the test suite with:
+Run the automated tests:
 
 ```bash
 pytest
 ```
 
-## Dashboard
-
-The repository also contains a Streamlit dashboard. Run it with:
+Train the structured model explicitly:
 
 ```bash
-streamlit run dashboard.py
+python train_classifier.py
 ```
 
-The dashboard should be considered a prototype interface until its prediction inputs are fully aligned with the structured ML model and production data contract.
+Run the full analytics/NLP pipeline:
 
-## Documentation
+```bash
+python app.py
+```
 
-- [Project Overview](docs/PROJECT_OVERVIEW.md) — system architecture and components
-- [ML Methodology](docs/ML_METHODOLOGY.md) — feature design, leakage prevention, models, and evaluation
-- [Data Dictionary](docs/DATA_DICTIONARY.md) — dataset fields and modeling roles
-- [NLP Pipeline](docs/NLP_PIPELINE.md) — feedback generation, preprocessing, themes, keywords, and topics
-- [Contributing](CONTRIBUTING.md) — development and contribution guidance
+## Project structure
 
-## Limitations and responsible use
+```text
+Mindscope_Analysis/
+├── app.py
+├── api.py
+├── dashboard.py
+├── predict_burnout.py
+├── train_classifier.py
+├── data/
+├── docs/
+├── models/                 # local generated model artifacts
+├── notebooks/
+├── reports/
+├── src/
+│   ├── analysis.py
+│   ├── burnout_classifier.py
+│   ├── correlation_engine.py
+│   ├── data_loader.py
+│   ├── feature_engineering.py
+│   ├── model_evaluation.py
+│   ├── model_service.py
+│   ├── nlp_engine.py
+│   ├── text_generator.py
+│   └── ...
+├── tests/
+├── visualizations/
+├── .env.example
+├── .gitignore
+├── CONTRIBUTING.md
+├── LICENSE
+├── README.md
+└── requirements.txt
+```
 
-MindScope is a portfolio/research prototype. Results depend on the quality, representativeness, and construction of the underlying dataset. Associations should not automatically be interpreted as causal relationships. Burnout and mental-health-related measurements are sensitive and should be handled with appropriate privacy, security, consent, and governance controls.
+## Responsible use and limitations
 
-The model should not be used to diagnose a medical condition, make automated employment decisions, or determine an employee's fitness for work.
+- Correlation is not evidence of causation.
+- Dataset quality and representativeness determine how meaningful the results are.
+- Mental-health-related fields are sensitive and require appropriate privacy, consent, and governance.
+- Synthetic feedback is not real employee testimony.
+- The model has not been externally validated for real-world workplace use.
+- Predictions should not be used to diagnose medical conditions or make automated employment decisions.
 
-## Roadmap
+## Future improvements
 
-Planned improvements include:
+Potential future work includes:
 
-- Explainable AI using SHAP or comparable techniques
-- Stronger statistical inference and confidence intervals
-- A fully aligned interactive dashboard
-- Individual risk profiles and contributing-factor explanations
-- Model fairness/performance analysis across relevant groups
-- Better data validation and monitoring
-- CI-based automated testing
-- Deployment-ready API and application architecture
+- SHAP or comparable explainability
+- Model calibration
+- External validation
+- Group-wise performance/fairness analysis
+- Data validation and monitoring
+- CI-based testing
+- Deployment hardening
 
-## Technology
-
-Python, Pandas, NumPy, scikit-learn, Matplotlib/Plotly, NLP tooling, Joblib, Streamlit, and pytest.
+These are optional future improvements, not required for the current portfolio prototype.
 
 ## Author
 
