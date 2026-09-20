@@ -46,7 +46,13 @@ def make_row():
 
 
 def test_burnout_score_is_not_used_as_a_feature():
-    X, y = prepare_features(pd.DataFrame([make_row()]))
+    first = make_row()
+    second = make_row()
+    second["employee_id"] = 2
+    second["burnout_level"] = "High"
+
+    X, y = prepare_features(pd.DataFrame([first, second]))
+
     assert "burnout_score" not in X.columns
     assert y.iloc[0] == "Moderate"
 
